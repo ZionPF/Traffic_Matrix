@@ -2,7 +2,7 @@
 # vim: set fileencoding=utf-8:
 import ConfigParser
 import logging
-import MySQLdb
+#import MySQLdb
 import os
 import sys
 import time
@@ -10,10 +10,10 @@ import time
 import subprocess
 import threading
 
-import socket
+#import socket
 import simplejson as json
 from optparse import OptionParser
-from sqlalchemy.ext.sqlsoup import SqlSoup
+#from sqlalchemy.ext.sqlsoup import SqlSoup
 
 
 OUT_PORT_NAME = 'int-br-eth2'
@@ -25,10 +25,10 @@ guarantees = {}
 ip_ports = {}
 #ip_ports[ip.ip] = {"port_name":ip.port_name, "host_ip":ip.host_ip}
 supressions = {}
-server_ip = ""
-server_port = ""
-my_ip = ""
-db_url = ""
+#server_ip = ""
+#server_port = ""
+#my_ip = ""
+#db_url = ""
 supression = {}
 
 
@@ -333,7 +333,8 @@ def get_ports():
             port_info = i.split('\t\t')
             port_id = port_info[0].split(':')[0]
             port_id = port_id[1:] 
-            port_name = port_info[0].split(':')[1][1:]
+            port_name = port_info[0].split(':')[1][1:].split(' ')[0]
+			#tapa185c58a-64 (internal)
             if port_name.endswith('\n'):
                 port_name = port_name[:-1]
             port_traffic = port_info[-1].split(' ')
@@ -347,19 +348,11 @@ def get_ports():
             
             if port_name in ports:
                 ports[port_name].UpdateRates(rx, tx)
+		print "already there:"+port_name+":"+ str(ports[port_name].tx_rate)
             else:
-                if port_name.startswith("qvo"):
+                if port_name.startswith("tap"):
                     ports[port_name] = PortInfo(port_id,port_name)
                     ports[port_name].UpdateRates(rx, tx)
-                    if port_name in guarantees:
-                        for i in guarantees[port_name]:
-                            if i == '0':
-                                ports[port_name].guarantee = guarantees[port_name][i]
-                            else:
-                                ports[port_name].flow_txg[i] = guarantees[port_name][i]    
-                elif port_name == OUT_PORT_NAME:
-                    OUT_PORT = port_id
-                    print "yeah the out port is " + port_id
                 
 #guarantees = {'tap44e21c13-40':[200,{192.168.1.18:150}], 'tap840158bf-03':[600,{192.168.2.10:500}]}
 
@@ -367,7 +360,7 @@ def get_ports():
 
 def get_flows():
     for key in ports:
-        tmp = os.popen("ovs-dpctl dump-flows br-int | grep 'in_port(" + key +")'").read()
+        tmp = os.popen("ovs-dpctl dump-flows| grep 'in_port(" + key +")'").read()
         for flow in tmp.split("\n"):
             flow_info = flow.split(",")
             flow_dst = ""
@@ -385,9 +378,10 @@ def get_flows():
 def get_inflows():
     global ports
     global ip_ports
-    cmd = "ovs-dpctl dump-flows br-int | grep 'in_port(" + OUT_PORT +")' | grep 10.10"
+    cmd = "ovs-dpctl dump-flows| grep 'in_port(" + OUT_PORT +")' | grep 192.168"
     print cmd
     tmp = os.popen(cmd).read()
+    print tmp
     for flow in tmp.split("\n"):
         flow_info = flow.split(",")
         flow_src = ""
@@ -528,13 +522,13 @@ def main():
     global ports
     flows = []
     x = 0
-    PreConfigure()
+    #PreConfigure()
     get_ports()
     #print "initing tc"
     #init_tc()
     #print "done tc init"
     while True:
-        getSupression()
+        #getSupression()
         get_ports()
         get_inflows()       
     #    update_port_caps()
