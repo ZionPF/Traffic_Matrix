@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 import time
+import datetime
 
 import subprocess
 import threading
@@ -89,12 +90,9 @@ def PreConfigure():
     print guarantees
     print ip_ports
 
-#logging.basicConfig(level=logging.DEBUG)
-logging.basicConfig(level=logging.INFO)
-myfile = file("testit.txt", 'w')
+    myfile = file("testit.txt", 'w')
 
 def run_cmd(args):
-    logging.debug(" ".join(args))
     return subprocess.Popen(args, stdout=subprocess.PIPE).communicate()[0]
 
 def run_vsctl(args):
@@ -245,6 +243,7 @@ class PortInfo:
             self.in_flows[srcIP] = FlowInfo(srcIP, dstIP)
             self.in_flows[srcIP].add_txbyte(tx_byte)
 
+	
  
 
     def cap_flows(self):
@@ -348,7 +347,7 @@ def get_ports():
             
             if port_name in ports:
                 ports[port_name].UpdateRates(rx, tx)
-		print "already there:"+port_name+":"+ str(ports[port_name].tx_rate)
+		#print "already there:"+port_name+":"+ str(ports[port_name].tx_rate)
             else:
                 if port_name.startswith("tap"):
                     ports[port_name] = PortInfo(port_id,port_name)
@@ -379,9 +378,9 @@ def get_inflows():
     global ports
     global ip_ports
     cmd = "ovs-dpctl dump-flows| grep 'in_port(" + OUT_PORT +")' | grep 192.168"
-    print cmd
+    #print cmd
     tmp = os.popen(cmd).read()
-    print tmp
+    #print tmp
     for flow in tmp.split("\n"):
         flow_info = flow.split(",")
         flow_src = ""
@@ -522,6 +521,8 @@ def main():
     global ports
     flows = []
     x = 0
+    logging.basicConfig(filename='rate.log',format='%(asctime)s %(message)s',level=logging.DEBUG)
+    logging.info("check this out")
     #PreConfigure()
     get_ports()
     #print "initing tc"
@@ -529,8 +530,15 @@ def main():
     #print "done tc init"
     while True:
         #getSupression()
+#	ts = time.time()
+#	st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+#	print st
         get_ports()
         get_inflows()       
+	for port_id in ports:
+	    print port_id
+	    logging.info('%s,%s', port_id,ports[port_id].tx_rate)
+	
     #    update_port_caps()
     #    in_flow_feedback()
     #    update_flow_caps()
