@@ -358,8 +358,9 @@ def get_ports():
         return raw_port
 
 def get_flows():
-    for key in ports:
-        tmp = os.popen("ovs-dpctl dump-flows| grep 'in_port(" + key +")'").read()
+    for port_name in ports:
+        tmp = os.popen("ovs-dpctl dump-flows| grep 'in_port(" + ports[port_name].port_id +")'").read()
+	print tmp
         for flow in tmp.split("\n"):
             flow_info = flow.split(",")
             flow_dst = ""
@@ -371,7 +372,7 @@ def get_flows():
                 if info.startswith(' bytes'):
                     flow_byte = info.split(":")[-1]
             if flow_dst != "":
-                ports[key].add_flow(flow_src, flow_dst, flow_byte)      
+                ports[port_name].add_flow(flow_src, flow_dst, flow_byte)      
                 print "adding flows from get flow:", flow_dst
         
 def get_inflows():
@@ -525,6 +526,7 @@ def main():
     logging.info("check this out")
     #PreConfigure()
     get_ports()
+    get_flows()
     #print "initing tc"
     #init_tc()
     #print "done tc init"
@@ -537,7 +539,12 @@ def main():
         get_inflows()       
 	for port_id in ports:
 	    print port_id
-	    logging.info('%s,%s', port_id,ports[port_id].tx_rate)
+	    port_log=ports[port_id]
+	    logging.info('%s,%s', port_id,port_log.tx_rate)
+	    for flow_id in port_log.flows:
+		print flow_id
+		flow_log = port_log.flows[flow_id]
+		logging.info('%s,%s', flow_id,flow_log.tx_rate)
 	
     #    update_port_caps()
     #    in_flow_feedback()
